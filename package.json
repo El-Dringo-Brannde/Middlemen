@@ -1,0 +1,27 @@
+{
+  "name": "middlemen",
+  "version": "0.0.1",
+  "description": "Create custom middleware for serverless functions within CSPs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/El-Dringo-Brannde/Middlemen.git"
+  },
+  "keywords": [
+    "middleware",
+    "serverless"
+  ],
+  "author": "Brandon Dring",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/El-Dringo-Brannde/Middlemen/issues"
+  },
+  "homepage": "https://github.com/El-Dringo-Brannde/Middlemen#readme",
+  "devDependencies": {
+    "prettier": "^1.17.0",
+    "typescript": "^3.4.5"
+  }
+}
