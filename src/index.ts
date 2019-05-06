@@ -1,4 +1,1 @@
-console.log('Hello World!');
-interface foo { 
-	bar: number;
-};
+module.exports = require('./Azure/MiddleMen');
