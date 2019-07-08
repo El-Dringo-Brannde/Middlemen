@@ -1,1 +1,2 @@
-module.exports = require('./Azure/MiddleMen');
+import AzureMiddleMiddlemen from './Azure/index';
+export { AzureMiddleMiddlemen };
