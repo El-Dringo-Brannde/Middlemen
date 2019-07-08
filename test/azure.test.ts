@@ -62,6 +62,7 @@ it('should handle chained functions', done => {
 			}
 		}
 	};
+	//@ts-ignore
 	ChainedFunction(mockCtx, message);
 });
 
@@ -98,6 +99,7 @@ it('should handle error in catch', done => {
 		}
 	};
 
+	//@ts-ignore
 	CatchedFunction(mockCtx, message);
 });
 
@@ -132,6 +134,7 @@ it('should handle valid schema inputs', done => {
 		}
 	};
 
+	//@ts-ignore
 	ValidSchemaFunction(mockCtx, message);
 });
 
@@ -165,6 +168,7 @@ it('should handle invalid schema inputs', done => {
 		}
 	};
 
+	//@ts-ignore
 	InvalidSchemaFunction(mockCtx, message);
 });
 
@@ -207,6 +211,7 @@ it('should handle when done in called early', done => {
 		}
 	};
 
+	//@ts-ignore
 	DoneEarlyFunction(mockCtx, message);
 });
 
@@ -218,12 +223,12 @@ it('should handle data spreading', done => {
 
 	const SpreadDataFunction = new MiddlewareHandler()
 		.use(ctx => {
-			ctx.myData = 'some info';
+			ctx.data = 'some info';
 			ctx.next();
 		})
 		.use(ctx => {
 			ctx.log.info('Im not called');
-			ctx.done(null, { data: ctx.myData });
+			ctx.done(null, { data: ctx.data });
 		})
 		.catch((err, ctx) => {
 			ctx.log.error(err);
@@ -244,6 +249,7 @@ it('should handle data spreading', done => {
 		}
 	};
 
+	//@ts-ignore
 	SpreadDataFunction(mockCtx, message);
 });
 
@@ -298,6 +304,7 @@ it('should handle when optional chaining function handlers', done => {
 		}
 	};
 
+	//@ts-ignore
 	OptionalFunction(mockCtx, message);
 });
 
@@ -347,5 +354,6 @@ it('should handle when optional chaining function handlers', done => {
 		}
 	};
 
+	// @ts-ignore
 	NextFunction(mockCtx, message);
 });

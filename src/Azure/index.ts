@@ -1,4 +1,12 @@
 import Joi from '@hapi/joi';
+import {
+	NextContext,
+	Context,
+	MiddlewareFunc,
+	CatchMiddlewareFunc,
+	PredicateMiddlewareFunc,
+	MiddlewareStack
+} from './index.d';
 
 const validateSchema = schema => (ctx, input) => {
 	const { error } = Joi.validate(input, schema);
@@ -14,53 +22,56 @@ const validateSchema = schema => (ctx, input) => {
 };
 
 class AzureMiddleMen {
-	private middlewareStack = [];
+	private middlewareStack: MiddlewareStack[] = [];
 
 	validate(schema): AzureMiddleMen {
-		if (!schema) {
-			throw Error('schema should not be empty!');
-		}
+		if (!schema) throw Error('schema should not be empty!');
+
 		this.middlewareStack = [
-			{ fn: validateSchema(schema) },
+			{ func: validateSchema(schema) },
 			...this.middlewareStack
 		];
+
 		return this;
 	}
 
-	use(fn): AzureMiddleMen {
-		this.middlewareStack.push({ fn });
+	use(func: MiddlewareFunc): AzureMiddleMen {
+		this.middlewareStack.push({ func });
 		return this;
 	}
 
-	iterate(args, iterator): AzureMiddleMen {
-		args.forEach(arg => {
-			this.middlewareStack.push({ fn: iterator(arg) });
-		});
+	iterate(args: Array<any>, iterator): AzureMiddleMen {
+		args.forEach(arg => this.middlewareStack.push({ func: iterator(arg) }));
 		return this;
 	}
 
-	useIf(predicate, fn): AzureMiddleMen {
-		this.middlewareStack.push({ fn, predicate, optional: true });
+	useIf(
+		predicate: PredicateMiddlewareFunc,
+		func: MiddlewareFunc
+	): AzureMiddleMen {
+		this.middlewareStack.push({ func, predicate, optional: true });
 		return this;
 	}
 
-	catch(fn): AzureMiddleMen {
-		this.middlewareStack.push({ fn, error: true });
+	catch(func: CatchMiddlewareFunc): AzureMiddleMen {
+		this.middlewareStack.push({ func, error: true });
 		return this;
 	}
 
-	listen() {
-		const self = this;
-		return (context, inputs, ...args) => self._handle(context, inputs, ...args);
-	}
+	listen = (): ((
+		context: NextContext & Context,
+		inputs: any,
+		...args: Array<any>
+	) => void) => (context, inputs, ...args) =>
+		this._handle(context, inputs, ...args);
 
-	private _handle(ctx, input, ...args): void {
+	private _handle(ctx: NextContext, input, ...args): void {
 		const originalDoneImplementation = ctx.done;
 		const stack = this.middlewareStack;
 		let index = 0;
 		let doneWasCalled = false;
 
-		ctx.done = (...params: [any]) => {
+		ctx.done = (...params: Array<any>) => {
 			if (doneWasCalled) return;
 			doneWasCalled = true;
 			originalDoneImplementation(...params);
@@ -69,12 +80,11 @@ class AzureMiddleMen {
 		ctx.next = err => {
 			try {
 				const layer = stack[index++];
-				// No more layers to evaluate
-				// Call DONE
+				// No more layers to evaluate, Call done and exit
 				if (!layer) return ctx.done(err);
 				// Both next called with err AND layers is error handler
 				// Call error handler
-				if (err && layer.error) return layer.fn(err, ctx, input, ...args);
+				if (err && layer.error) return layer.func(err, ctx, input, ...args);
 				// Next called with err OR layers is error handler, but not both
 				// Next layer
 				if (err || layer.error) return ctx.next(err);
@@ -82,8 +92,8 @@ class AzureMiddleMen {
 				// Next layer
 				if (layer.optional && !layer.predicate(ctx, input)) return ctx.next();
 
-				// Call function handler
-				return layer.fn(ctx, input, ...args);
+				// Call original function handler
+				return layer.func(ctx, input, ...args);
 			} catch (e) {
 				return ctx.next(e);
 			}
