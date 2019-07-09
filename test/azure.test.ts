@@ -2,21 +2,23 @@ import chai from 'chai';
 import Joi from '@hapi/joi';
 import spies from 'chai-spies';
 
-import MiddlewareHandler from '../src/Azure/index';
+import { AzureMiddleMen } from '../src/index';
 
 const { expect } = chai;
 chai.use(spies);
 
-const EventSchema = Joi.object({
-	event: Joi.string()
-		.valid('example')
-		.required(),
-	payload: Joi.object()
-		.keys({
-			text: Joi.string()
-		})
-		.required()
-}).required();
+const EventSchema = Joi.object()
+	.keys({
+		event: Joi.string()
+			.valid('example')
+			.required(),
+		payload: Joi.object()
+			.keys({
+				text: Joi.string()
+			})
+			.required()
+	})
+	.required();
 
 const handler = ctx => {
 	ctx.log.info('Im called first');
@@ -29,7 +31,7 @@ const defaultctx = {
 };
 
 it('should handle chained functions', done => {
-	const ChainedFunction = new MiddlewareHandler()
+	const ChainedFunction = new AzureMiddleMen()
 		.use(handler)
 		.use(ctx => {
 			Promise.resolve(1).then(() => {
@@ -67,7 +69,7 @@ it('should handle chained functions', done => {
 });
 
 it('should handle error in catch', done => {
-	const CatchedFunction = new MiddlewareHandler()
+	const CatchedFunction = new AzureMiddleMen()
 		.use(() => {
 			throw 'This is an error';
 		})
@@ -109,7 +111,7 @@ it('should handle valid schema inputs', done => {
 		payload: { text: 'holamundo' }
 	};
 
-	const ValidSchemaFunction = new MiddlewareHandler()
+	const ValidSchemaFunction = new AzureMiddleMen()
 		.validate(EventSchema)
 		.use(ctx => {
 			ctx.log.info('Im called');
@@ -141,7 +143,7 @@ it('should handle valid schema inputs', done => {
 it('should handle invalid schema inputs', done => {
 	const message = {};
 
-	const InvalidSchemaFunction = new MiddlewareHandler()
+	const InvalidSchemaFunction = new AzureMiddleMen()
 		.validate(EventSchema)
 		.use(ctx => {
 			ctx.log.info('Im not called');
@@ -158,7 +160,7 @@ it('should handle invalid schema inputs', done => {
 		done: err => {
 			try {
 				expect(err.message).to.include('Invalid input');
-				expect(err.input).to.equal(JSON.stringify(message));
+				expect(err.input).to.equal(message);
 				expect(mockCtx.log.info).to.have.not.been.called.with('Im not called');
 				expect(mockCtx.log.error).to.have.been.called();
 				done();
@@ -178,7 +180,7 @@ it('should handle when done in called early', done => {
 		payload: { text: 'holamundo' }
 	};
 
-	const DoneEarlyFunction = new MiddlewareHandler()
+	const DoneEarlyFunction = new AzureMiddleMen()
 		.use(ctx => {
 			const predicate = true;
 			if (predicate) {
@@ -221,7 +223,7 @@ it('should handle data spreading', done => {
 		payload: { text: 'holamundo' }
 	};
 
-	const SpreadDataFunction = new MiddlewareHandler()
+	const SpreadDataFunction = new AzureMiddleMen()
 		.use(ctx => {
 			ctx.data = 'some info';
 			ctx.next();
@@ -259,7 +261,7 @@ it('should handle when optional chaining function handlers', done => {
 		payload: { text: 'holamundo' }
 	};
 
-	const OptionalFunction = new MiddlewareHandler()
+	const OptionalFunction = new AzureMiddleMen()
 		.use(ctx => {
 			ctx.data = [];
 			ctx.next();
@@ -311,7 +313,7 @@ it('should handle when optional chaining function handlers', done => {
 it('should handle empty argument in validation and throw error', done => {
 	try {
 		// @ts-ignore
-		new MiddlewareHandler()
+		new AzureMiddleMen()
 			.validate()
 			.use(handler)
 			.catch((err, ctx) => ctx.done(err))
@@ -329,7 +331,7 @@ it('should handle when optional chaining function handlers', done => {
 		payload: { text: 'holamundo' }
 	};
 
-	const NextFunction = new MiddlewareHandler()
+	const NextFunction = new AzureMiddleMen()
 		.use(ctx => {
 			ctx.log.info('Im called first');
 			ctx.next();

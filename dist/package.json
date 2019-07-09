@@ -1,12 +1,11 @@
 {
 	"name": "middlemen",
-	"version": "0.1.0",
+	"version": "0.1.5",
 	"description": "Create custom middleware for serverless functions within CSPs",
 	"main": "index.js",
 	"scripts": {
 		"pretest": "tsc",
 		"test": "mocha --require ts-node/register test/**/*.ts",
-		"prepublish": "cp ./package.json ./dist",
 		"publish": "npm publish"
 	},
 	"repository": {

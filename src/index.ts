@@ -1,2 +1,1 @@
-import AzureMiddleMiddlemen from './Azure/index';
-export { AzureMiddleMiddlemen };
+export { default as AzureMiddleMen } from './Azure/index';
