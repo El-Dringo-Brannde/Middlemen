@@ -50,14 +50,15 @@ class AzureMiddleMen {
 
 		const exit = () => {
 			context.res = {
-				status: 403,
-				body: res.toString()
+				status: 400,
+				body: { error: res.toString() }
 			};
 			context.done();
 		};
+
 		if (res instanceof Error && !this.catchFunc) exit();
 		else if (res instanceof Error && this.catchFunc)
-			this.catchFunc(res.toString(), context);
+			this.catchFunc(res, context);
 	};
 }
 
