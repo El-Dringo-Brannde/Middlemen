@@ -1,157 +1,116 @@
-[![](https://img.shields.io/travis/emanuelcasco/azure-middleware.svg)](https://github.com/emanuelcasco/azure-middleware) [![](https://img.shields.io/github/issues/emanuelcasco/azure-middleware.svg)](https://github.com/emanuelcasco/azure-middleware/issues) [![](https://img.shields.io/github/stars/emanuelcasco/azure-middleware.svg)](https://github.com/emanuelcasco/azure-middleware) [![](https://img.shields.io/github/license/emanuelcasco/azure-middleware.svg)](https://github.com/emanuelcasco/azure-middleware) [![](https://img.shields.io/node/v/azure-middleware-engine.svg)](https://www.npmjs.com/package/azure-middleware)
+![](https://img.shields.io/bundlephobia/minzip/middlemen.svg) ![](https://img.shields.io/npm/v/middlemen.svg) ![](https://img.shields.io/github/issues-raw/El-dringo-brannde/middlemen.svg) ![](https://img.shields.io/github/license/el-dringo-brannde/middlemen.svg)
 
 <p align="center">
-  <img width="150" height="150" src="./assets/logo.png">
+  <img width="150" height="150" src="./Middlemen.png">
 </p>
 
-# Azure Middleware Engine 🔗
+# Middlemen 🔗
 
-Azure Middleware Engine is developed inspired in web framworks like [express](http://expressjs.com/), [fastify](http://fastify.io/), [hapi](https://hapijs.com/), etc. to provide an easy-to-use api to use middleware patter in [Azure Functions](https://azure.microsoft.com/en-us/services/functions/).
+A dead simple middleware solution for [Azure Functions](https://azure.microsoft.com/en-us/services/functions/), similar to
+[express](http://expressjs.com/), & [hapi](https://hapijs.com/). Which allows you to stop worrying about validation, and token checking, and just worry about business logic.
 
-But, less talk and let see some code.
+## Installation
 
-For example:
+#### Yarn
+
+`yarn add middlemen`
+
+#### NPM
+
+`npm install -S middlemen`
+
+## Usage
+
+Similar to functional programming, the only thing you need to do is attach handlers to the Middlemen in the order you want them to be ran.
 
 ```js
 // index.js
-const { someFunctionHandler } = require('./handlers');
-const schema = require('../schemas');
+const { AzureMiddleMen } = require('middlemen');
+const JoiSchema = require('./validation');
 
-const ChainedFunction = new MiddlewareHandler()
-	.validate(schema)
-	.use(someFunctionHandler)
-	.use(ctx => {
-		Promise.resolve(1).then(() => {
-			ctx.log.info('Im called second');
-			ctx.next();
-		});
+const wrappedFunc = new AzureMiddleMen()
+	.validate(JoiSchema)
+	.use((context, req) => /* Check Token or whatever validation. */)
+	.use((context, req) => /* Do your business logic here. */)
+	.catch((err, ctx) => {
+      // Do whatever you want to clean up your function then return an error
+		ctx.res = { status: 500, body: err.message };
+		ctx.done(null);
 	})
-	.use(ctx => {
-		ctx.log.info('Im called third');
-		ctx.done(null, { status: 200 });
-	})
-	.listen();
+	.listen(); // Get ready to listen
 
-module.exports = ChainedFunction;
-```
-
-## Install
-
-Simply run:
-
-```bash
-npm install azure-middleware
+module.exports = wrappedFunc;
 ```
 
 ## Motivation
 
-Biggest benefit of serverless arquitectures is that you can focus on implementing business logic. The problem is that when you are writing a function handler, you have to deal with some common technical concerns outside business logic, like input parsing and validation, output serialization, error handling, api calls, and more.
+Building a Microservice archtecture is easy.. But repetitive. Sure you might make a function that for instance, returns a user from your database. Only to be bogged down by things like validating that the request is valid, checking JWT tokens, or anything in between.
 
-Very often, all this necessary code ends up polluting the pure business logic code in your handlers, making the code harder to read and to maintain.
+I have always been enamored with [express](http://expressjs.com/), & [hapi](https://hapijs.com/) because you can do exactly that, focus on your actual code logic, leave the validation to a pipeline and keep your code clean.
 
-Web frameworks, like [express](http://expressjs.com/), [fastify](http://fastify.io/) or [hapi](https://hapijs.com/), has solved this problem using the [middleware pattern](https://www.packtpub.com/mapt/book/web_development/9781783287314/4/ch04lvl1sec33/middleware).
+## API
 
-This pattern allows developers to isolate these common technical concerns into _"steps"_ that _decorate_ the main business logic code.
+### `.use(context, req)`
 
-Separating the business logic in smaller steps allows you to keep your code clean, readable and easy to maintain.
+The typical Azure function with params of `(context, req)` that gets passed along with each function.
+The order which handlers are added to the handler determines the order in which they'll be executed in the runtime.
 
-Having not found an option already developed, I decided to create my own middleware engine for Azure Functions.
-
-## Usage
-
-If you are familiar with Functional programming you will notice that behavior is similar to a pipeline. You can attach function handlers to the chain and them will be executed sequentially,
-
-#### middlewareHandler.use
-
-You can add a middleware using `use`. The order which handlers are added to the handler determines the order in which they'll be executed in the runtime.
+If one stage fails, either by returning or throwing an `Error` the following stages after are not called and all execution is stopped.
 
 ```javascript
-const ChainedFunction = new MiddlewareHandler()
-	.use(context => {
-		myPromise(1, () => {
-			context.log.info('Im called second');
-			context.next();
-		});
-	})
-	.use(context => {
-		context.log.info('Im called third');
-		context.done(null, { status: 200 });
-	})
+const wrappedFunc = new AzureMiddleMen()
+   .use(JWT.checkToken)
+   .use((context,req)) => /* Do some business logic here*/)
+   .use((context,req)) => /* Send a confirmation email to user */)
 	.listen();
 
 module.exports = ChainedFunction;
 ```
 
-#### middlewareHandler.useIf
+#### Flow
 
-Similar to `use`, but you can define a predicate as first argument. If predicates resolves in a `false` then function handler won't be executed.
+Unlike most middlware functions, there is no need to call a `next()` function. When your function is done executing, the next function in the flow is called until you call `context.done()`
 
-```javascript
-const OptionalFunction = new MiddlewareHandler()
-	.use(ctx => {
-		ctx.log.info('I will be called');
-		ctx.next();
-	})
-	.useIf(
-		(ctx, msg) => false, // function won't be executed
-		ctx => {
-			ctx.log.info("I won't be called");
-			ctx.next();
-		}
-	)
-	.catch((err, ctx) => {
-		ctx.done(err);
-	})
-	.listen();
+##### `async/await`
 
-module.exports = OptionalFunction;
-```
+This is fully supported to use `async/await` in all your functions. The pipeline awaits each function naturally.
 
-#### middlewareHandler.iterate
+#### `.validate()`
 
-Allows you to iterate over an array of elements that will be passed to an iterator function.
+Validate a [Joi](https://github.com/hapijs/joi) object to be called before any of your `.use` functions. If it fails, it exits the execution and returns a Joi error.
 
 ```javascript
-const IterateFunction = new MiddlewareHandler()
-	.iterate([1, 2, 3, 4], index => ctx => {
-		ctx.log.info(index);
-		ctx.next();
-	})
-	.catch((err, ctx) => {
-		ctx.done(err);
-	})
-	.listen();
-
-module.exports = IterateFunction;
-```
-
-#### middlewareHandler.validate
-
-You can define a schema validation to your function input. We use [Joi](https://www.npmjs.com/package/azure-middleware) to create and validate schemas.
-
-```javascript
-const SchemaFunction = new MiddlewareHandler()
+const wrappedFunc = new AzureMiddlemen()
 	.validate(JoiSchema)
 	.use(context => {
-		context.log.info('Im called only if message is valid');
-		context.done();
-	})
-	.catch((err, context) => {
-		context.log.error(err);
+		context.res = {
+			status: 200,
+			body: `I'm called because I passed validation`
+		};
 		context.done();
 	})
 	.listen();
 ```
 
-#### middlewareHandler.catch
+On a validation failure you'll get a message like this
 
-Error handling functions will only be executed if there an error has been thrown or returned to the context.next method, described later, at which point normal Function Handler methods will stop being executed.
+```
+Invalid input, child "email" fails because ["email" is required]
+```
+
+### `.catch()`
+
+You can define your own catch function to handle your own errors should they be thrown or returned in any of your functions in the chain.
+
+For example:
 
 ```javascript
-const CatchedFunction = new FunctionMiddlewareHandler()
-	.validate(EventSchema)
+const wrappedFunc = new AzureMiddlemen()
+	.validate(schema)
+	.use(() => Error('This is an error'))
+	/* OR */
 	.use(() => {
-		return Error('This is an error');
+		throw Error('This is also an error');
 	})
 	.catch((err, context) => {
 		context.log.error(err);
@@ -160,62 +119,22 @@ const CatchedFunction = new FunctionMiddlewareHandler()
 	.listen();
 ```
 
-##### middlewareHandler.listen
+Optionally, errors are caught for you automatically in the form of returning the error like so
 
-Creates a function which can be exported as an Azure Function module.
-
-## API
-
-#### Function types
-
-##### FunctionHandler - (context, input): any
-
-A Function Handler is the normal syntax for an Azure Function. Any existing Node.js Functions could be used in this place. Note that you have to use the `context.next` method to trigger the next piece of middleware, which would require changes to any existing code that was used with func-middleware.
-
-##### ErrorFunctionHandler - (err, context, input): any
-
-Same as a normal Function Handler, but the first parameter is instead a context object.
-
-##### Predicate - (input): boolean
-
-Predicates are functions that have to return a boolean value. They are used to define a condition by which a FunctionHandler is executed or not.
-
-#### Next & Done
-
-##### context.next(err?: Error)
-
-The `context.next` method triggers the next middleware to start. If an error is passed as a parameter, it will trigger the next ErrorFunctionHandler or, if there is none, call context.done with the error passed along.
-
-##### context.done(err?: Error, output: any)
-
-The `context.done` method works the same as normal, but it's been wrapped by the library to prevent multiple calls.
-
-## About
-
-This project is maintained by [Emanuel Casco](https://github.com/emanuelcasco).
-
-## License
-
-**azure-middleware-engine** is available under the MIT [license](https://github.com/emanuelcasco/azure-middleware/blob/HEAD/LICENSE.md).
-
+```js
+context.res = {
+	status: 400,
+	body: { error: error.toString() }
+};
+context.done();
 ```
-Copyright (c) 2019 Brandon Dring
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+### .listen()
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+Use at the end of your function chain, just wraps your functions in the middleware to be exported as an Azure Function module.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+```javascript
+const wrappedFunc = new AzureMiddlemen()
+	.use(() => /* Do stuff. */)
+	.listen(); // <-- Signal ready
 ```

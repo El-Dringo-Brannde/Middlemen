@@ -1,13 +1,13 @@
 {
 	"name": "middlemen",
-	"version": "0.1.5",
+	"version": "0.2.0",
 	"description": "Create custom middleware for serverless functions within CSPs",
 	"main": "index.js",
 	"scripts": {
 		"pretest": "tsc",
 		"test": "mocha --require ts-node/register test/**/*.ts",
-		"prepublish": "tsc && cp ./package.json ./dist && cd ./dist",
-		"publish": "npm publish"
+		"prepublish": "tsc && cp ./package.json ./dist && cp ./README.md ./dist && cd ./dist",
+		"publish": "./node_modules/.bin/release-it"
 	},
 	"repository": {
 		"type": "git",
@@ -33,6 +33,7 @@
 	},
 	"dependencies": {
 		"@azure/functions": "^1.0.3",
-		"@hapi/joi": "^15.1.0"
+		"@hapi/joi": "^15.1.0",
+		"release-it": "^12.3.4"
 	}
 }
