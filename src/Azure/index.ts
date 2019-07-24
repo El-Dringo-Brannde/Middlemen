@@ -1,23 +1,19 @@
 import Joi from '@hapi/joi';
 import {
 	MiddlewareFunc,
+	HttpRequest,
 	CatchMiddlewareFunc,
-	MiddlewareStack
+	Context,
+	Func
 } from './index.d';
 
 const validateSchema = schema => (ctx, input) => {
 	const { error } = Joi.validate(input, schema);
-	return error
-		? {
-				message: `Invalid input, ${error.message}`,
-				details: error.details,
-				input: input
-		  }
-		: null;
+	return error ? Error(`Invalid input, ${error.message}`) : null;
 };
 class AzureMiddleMen {
-	private middlewareStack: MiddlewareStack[] = [];
-	private catchFunc;
+	private middlewareStack: Array<MiddlewareFunc> = [];
+	private catchFunc: CatchMiddlewareFunc;
 
 	validate(schema): AzureMiddleMen {
 		if (!schema) throw Error('schema should not be empty!');
@@ -30,7 +26,7 @@ class AzureMiddleMen {
 		return this;
 	}
 
-	use(func: MiddlewareFunc): AzureMiddleMen {
+	use(func: Func): AzureMiddleMen {
 		this.middlewareStack.push({ func });
 		return this;
 	}
@@ -40,25 +36,37 @@ class AzureMiddleMen {
 		return this;
 	}
 
-	listen = () => async (context, inputs) => {
-		let res;
+	listen = () => async (context: Context, req: HttpRequest) => {
+		let res, err;
 
 		for await (let layer of this.middlewareStack) {
-			res = await layer.func(context, inputs);
-			if (res instanceof Error) break;
+			try {
+				res = await layer.func(context, req);
+				if (res instanceof Error) break;
+			} catch (error) {
+				err = error;
+				break;
+			}
 		}
 
-		const exit = () => {
+		const exit = error => {
 			context.res = {
 				status: 400,
-				body: { error: res.toString() }
+				body: { error: error.toString() }
 			};
 			context.done();
 		};
 
-		if (res instanceof Error && !this.catchFunc) exit();
-		else if (res instanceof Error && this.catchFunc)
-			this.catchFunc(res, context);
+		if ((res instanceof Error || err instanceof Error) && !this.catchFunc) {
+			const error = res instanceof Error ? res : err;
+			exit(error);
+		} else if (
+			(res instanceof Error || err instanceof Error) &&
+			this.catchFunc
+		) {
+			const error = res instanceof Error ? res : err;
+			this.catchFunc(error, context);
+		}
 	};
 }
 
