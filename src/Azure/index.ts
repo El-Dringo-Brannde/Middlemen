@@ -15,11 +15,11 @@ class AzureMiddleMen {
 	private middlewareStack: Array<MiddlewareFunc> = [];
 	private catchFunc: CatchMiddlewareFunc;
 
-	validate(schema): AzureMiddleMen {
-		if (!schema) throw Error('schema should not be empty!');
+	validate(joiSchema): AzureMiddleMen {
+		if (!joiSchema) throw Error('schema should not be empty!');
 
 		this.middlewareStack = [
-			{ func: validateSchema(schema) },
+			{ func: validateSchema(joiSchema) },
 			...this.middlewareStack
 		];
 
