@@ -3,6 +3,7 @@ import { Context } from '@azure/functions';
 interface NextContext extends Context {
 	next: (error?: Error) => any;
 	data?: any;
+	args?: Array<any>;
 }
 
 type MiddlewareFunc = (context: NextContext) => void;
