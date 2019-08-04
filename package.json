@@ -1,13 +1,12 @@
 {
 	"name": "middlemen",
-	"version": "0.2.0",
+	"version": "0.2.5",
 	"description": "Create custom middleware for serverless functions within CSPs",
 	"main": "index.js",
 	"scripts": {
 		"pretest": "tsc",
 		"test": "mocha --require ts-node/register test/**/*.ts",
-		"prepublish": "tsc && cp ./package.json ./dist && cp ./README.md ./dist && cd ./dist",
-		"publish": "./node_modules/.bin/release-it"
+		"prep-release": "tsc && cp ./package.json ./dist && cp ./README.md ./dist && cd ./dist"
 	},
 	"repository": {
 		"type": "git",

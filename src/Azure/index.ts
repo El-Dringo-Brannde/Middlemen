@@ -8,18 +8,18 @@ import {
 } from './index.d';
 
 const validateSchema = schema => (ctx, input) => {
-	const { error } = Joi.validate(input, schema);
+	const { error } = Joi.validate(input.body, schema);
 	return error ? Error(`Invalid input, ${error.message}`) : null;
 };
 class AzureMiddleMen {
 	private middlewareStack: Array<MiddlewareFunc> = [];
 	private catchFunc: CatchMiddlewareFunc;
 
-	validate(joiSchema): AzureMiddleMen {
-		if (!joiSchema) throw Error('schema should not be empty!');
+	validate(schema): AzureMiddleMen {
+		if (!schema) throw Error('schema should not be empty!');
 
 		this.middlewareStack = [
-			{ func: validateSchema(joiSchema) },
+			{ func: validateSchema(schema) },
 			...this.middlewareStack
 		];
 
