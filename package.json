@@ -33,6 +33,6 @@
 	"dependencies": {
 		"@azure/functions": "^1.0.3",
 		"@hapi/joi": "^15.1.0",
-		"release-it": "^12.3.4"
+		"release-it": "^15.6.0"
 	}
 }
